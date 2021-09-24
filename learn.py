@@ -18,7 +18,7 @@ timepassed       = 0
 taillen          = 1
 
 individual_alive = True
-group_size       = 500
+group_size       = 512
 population       = []
 #--------------------------------------
 
@@ -42,8 +42,6 @@ while True:
     print("gen:" + str(generation))
     indiv_counter = 0
     for individual in population:
-        if indiv_counter%100 == 0:
-            print("ind:" + str(indiv_counter))
         while True:    #main loop
             if direction == 0:
                 posy -= chhght
@@ -84,7 +82,7 @@ while True:
             if timepassed % 10 == 0:
                 taillen += 1
 #mainloop ends
-        individual.fitness  = timepassed
+        individual.fit  = timepassed
         trail               = []
         direction           = random.randrange(0,3)
         timepassed          = 0
@@ -93,23 +91,15 @@ while True:
         posy                = height/2 - chhght
         indiv_counter      += 1
 
-    parents = sorted(population, key=lambda individual : individual.fitness, reverse= True)
-    parents = parents[:1000]
-    print('best fit:' + str(parents[0].fitness))
+    parents = sorted(population, key=lambda individual : individual.fit, reverse= True)
+    # parents = sorted(population, key=lambda individual : individual.fit)
+    parents = parents[0:int(group_size/8)]
+    ###debug
+    # for c in range(len(parents)):
+    #     print(parents[c].fit)
+    ###debug
+    bestfit = parents[0].fit
 
-    obj.TNC(parents)
+    population = obj.MPX(parents, group_size)
+    print("bestfit...", bestfit)
     generation += 1
-
-    # nextgen1 = []
-    # nextgen2 = []
-    
-    # for unit in parents:
-    #     nextgen1.append(unit)
-    # for unit in parents:
-    #     nextgen2.append(unit)
-
-    # nextgen1    = obj.crossover_active(nextgen1)
-    # nextgen2    = obj.crossover_active(nextgen2)
-    
-    # population  = nextgen1 + nextgen2
-    # generation += 1
