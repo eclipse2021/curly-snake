@@ -18,7 +18,7 @@ timepassed       = 0
 taillen          = 1
 
 individual_alive = True
-group_size       = 512
+group_size       = 64
 population       = []
 #--------------------------------------
 
@@ -98,8 +98,10 @@ while True:
     # for c in range(len(parents)):
     #     print(parents[c].fit)
     ###debug
-    bestfit = parents[0].fit
+    elite = parents[0]
+    bestfit = elite.fit
 
     population = obj.MPX(parents, group_size)
+    population[0] = elite
     print("bestfit...", bestfit)
     generation += 1
