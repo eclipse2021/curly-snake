@@ -96,7 +96,7 @@ def MPX(population: list, population_size: int, mutant_possibility = 0.05):
                 try:
                     getw = left_layer.b
                 except AttributeError as e:
-                    #print(e)
+                    #print(e)   
                     break
                 
                 for k in range(len(left_layer.b)):

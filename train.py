@@ -24,7 +24,7 @@ taillen          = 1
 individual_alive = True
 group_size       = 32
 population       = []
-mutation_possibility_0 = 0.05
+mutation_possibility_0 = 0.1 / 1200
 mutation_possibility = mutation_possibility_0
 desired_fit = 400
 #--------------------------------------
@@ -109,17 +109,22 @@ while True:
         model2 = parents[1]
         off1 = net.CNN()
         off2 = net.CNN()
-        if random.uniform(0,1) <= mutation_possibility:
-            offsprings.append(off1)
-            offsprings.append(off2)
-            mutations_occured += 1
-            continue
+        #if random.uniform(0,1) <= mutation_possibility:
+        #    offsprings.append(off1)
+        #    offsprings.append(off2)
+        #    mutations_occured += 1
+        #    continue
         for q in range(len(model1.layer1[0].weight)):
             for w in range(len(model1.layer1[0].weight[q])):
                 for e in range(len(model1.layer1[0].weight[q][w])):
                     for r in range(len(model1.layer1[0].weight[q][w][e])):
                         left  = model1.layer1[0].weight[q][w][e][r].item()
                         right = model2.layer1[0].weight[q][w][e][r].item() 
+                        if random.uniform(0,1) <= mutation_possibility:
+                            with torch.no_grad():
+                                off1.layer1[0].weight[q][w][e][r] = right * random.uniform(-2,2)
+                                off2.layer1[0].weight[q][w][e][r] = left * random.uniform(-2,2)
+                                continue
                         if random.uniform(0,1) < 0.4:
                            with torch.no_grad():
                                 off1.layer1[0].weight[q][w][e][r] = right
@@ -131,6 +136,11 @@ while True:
         for q in range(len(model1.layer1[0].bias)):
             left = model1.layer1[0].bias[q].item()
             right = model2.layer1[0].bias[q].item()
+            if random.uniform(0,1) <= mutation_possibility:
+                with torch.no_grad():
+                    off1.layer1[0].bias[q] = right * random.uniform(-1,1)
+                    off2.layer1[0].bias[q] = left * random.uniform(-1,1)
+                    continue
             if random.uniform(0,1) < 0.4:
                 with torch.no_grad():
                     off1.layer1[0].bias[q] = right
@@ -145,6 +155,11 @@ while True:
                     for r in range(len(model1.layer2[0].weight[q][w][e])):
                         left  = model1.layer2[0].weight[q][w][e][r].item()
                         right = model2.layer2[0].weight[q][w][e][r].item() 
+                        if random.uniform(0,1) < mutation_possibility:
+                            with torch.no_grad():
+                                off1.layer2[0].weight[q][w][e][r] = right * random.uniform(-1,1)
+                                off2.layer2[0].weight[q][w][e][r] = left * random.uniform(-1,1)
+                                continue
                         if random.uniform(0,1) < 0.4:
                             with torch.no_grad():
                                 off1.layer2[0].weight[q][w][e][r] = right
@@ -156,19 +171,29 @@ while True:
         for q in range(len(model1.layer2[0].bias)):
             left = model1.layer1[0].bias[q].item()
             right = model2.layer1[0].bias[q].item()
+            if random.uniform(0,1) < mutation_possibility:
+                with torch.no_grad():
+                    off1.layer2[0].bias[q] = right * random.uniform(-1,1)
+                    off1.layer2[0].bias[q] = right * random.uniform(-1,1)
+                    continue
             if random.uniform(0,1) < 0.4:
                 with torch.no_grad():
-                    off1.layer1[0].bias[q] = right
-                    off2.layer1[0].bias[q] = left
+                    off1.layer2[0].bias[q] = right
+                    off2.layer2[0].bias[q] = left
             else:
                 with torch.no_grad():
-                    off1.layer1[0].bias[q] = left
-                    off2.layer1[0].bias[q] = right
+                    off1.layer2[0].bias[q] = left
+                    off2.layer2[0].bias[q] = right
 
         for q in range(len(model1.fc.weight)):
             for w in range(len(model1.fc.weight[q])):
                 left  = model1.fc.weight[q][w]
                 right = model2.fc.weight[q][w]
+                if random.uniform(0,1) < mutation_possibility:
+                    with torch.no_grad():
+                        off1.fc.weight[q][w] = right * random.uniform(-1,1)
+                        off2.fc.weight[q][w] = left * random.uniform(-1,1)
+                        continue
                 if random.uniform(0,1) < 0.4:
                     with torch.no_grad():
                         off1.fc.weight[q][w] = right
@@ -180,6 +205,11 @@ while True:
         for q in range(len(model1.fc.bias)):
             left = model1.fc.bias[q].item()
             right = model2.fc.bias[q].item()
+            if random.uniform(0,1) <= mutation_possibility:
+                with torch.no_grad():
+                    off1.fc.bias[q] = right * random.uniform(-1,1)
+                    off2.fc.bias[q] = right * random.uniform(-1,1)
+                    continue
             if random.uniform(0,1) < 0.4:
                 with torch.no_grad():
                     off1.fc.bias[q] = right
