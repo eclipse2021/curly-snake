@@ -49,101 +49,21 @@ class CNN(torch.nn.Module):
         out = self.fc(out)
         return out
 
-if __name__ == "__main__0":
-    weights_counter = 0#debug
-    weights_crossed = 0#debug
-
-    shape = (1,1,20,20)
-    x = torch.randn(shape)
-    model1 = CNN()
-    model2 = CNN()
-    print(model1.layer1[0].weight[0][0][0][0].item())
-    with torch.no_grad():
-        model1.layer1[0].weight[0][0][0][0] = 0
-    print("weight assigned in progress")
-    #print(model1.layer1[0].weight)#layer1[0] = conv layer , layer1[1] = relu , layer1[2] = maxpool
-    for q in range(len(model1.layer1[0].weight)):
-        for w in range(len(model1.layer1[0].weight[q])):
-                for e in range(len(model1.layer1[0].weight[q][w])):
-                    for r in range(len(model1.layer1[0].weight[q][w][e])):
-                        weights_counter += 1
-                        print("w1:", model1.layer1[0].weight[q][w][e][r])
-                        print("w2:", model2.layer1[0].weight[q][w][e][r])
-                        if random.uniform(0,1) < 0.4:
-                            left  = model1.layer1[0].weight[q][w][e][r].item()
-                            right = model2.layer1[0].weight[q][w][e][r].item()
-                            with torch.no_grad():
-                                model1.layer1[0].weight[q][w][e][r] = right
-                                model2.layer1[0].weight[q][w][e][r] =  left
-                            print("weight crossed:")
-                            print("w1:", model1.layer1[0].weight[q][w][e][r])
-                            print("w2:", model2.layer1[0].weight[q][w][e][r])
-                            weights_crossed += 1
-
-                        print("\n\n")
-    
-    print("total weights:", weights_counter)
-    print("weigths crossed:", weights_crossed)
-if __name__ == "__main__0":
-    weights_counter = 0#debug
-    weights_crossed = 0#debug
-
-    shape = (1,1,20,20)
-    x = torch.randn(shape)
-    model1 = CNN()
-    model2 = CNN()
-    print(model1.layer2[0].weight[0])
-    for q in range(len(model1.layer2[0].weight)):
-        for w in range(len(model1.layer2[0].weight[q])):
-            for e in range(len(model1.layer2[0].weight[q][w])):
-                for r in range(len(model1.layer2[0].weight[q][w][e])):
-                    print("w1:", model1.layer2[0].weight[q][w][e][r])
-                    print("w2:", model1.layer2[0].weight[q][w][e][r])
-                    if random.uniform(0,1) < 0.4:
-                        left  = model1.layer2[0].weight[q][w][e][r].item()
-                        right = model2.layer2[0].weight[q][w][e][r].item()
-                        with torch.no_grad():
-                            model1.layer2[0].weight[q][w][e][r] = right
-                            model2.layer2[0].weight[q][w][e][r] = left
-                            print("weight crossed:")
-                            print("w1:", model1.layer2[0].weight[q][w][e][r])
-                            print("W2:", model2.layer2[0].weight[q][w][e][r])
-                            weights_crossed += 1
-                    weights_counter += 1
-                    print("\n\n")
-    print("total weights = ", weights_counter)
-    print("weights crossed =", weights_crossed)
-if __name__ == "__main__0":
-    weights_counter = 0
-    weights_crossed = 0
-    shape = (1,1,20,20)
-    model1 = CNN()
-    model2 = CNN()
-    print(model1.fc.weight[0][0])
-
-    for q in range(len(model1.fc.weight)):
-        for w in range(len(model1.fc.weight[q])):
-            print("w1", model1.fc.weight[q][w])
-            print("w2", model2.fc.weight[q][w])
-            if random.uniform(0,1) < 0.4:
-                left = model1.fc.weight[q][w]
-                right = model2.fc.weight[q][w]
-                with torch.no_grad():
-                    model1.fc.weight[q][w] = right
-                    model2.fc.weight[q][w] = left
-                    print("weight crosssed:")
-                    print("w1:", model1.fc.weight[q][w])
-                    print("w2:", model2.fc.weight[q][w])
-                    weights_crossed += 1
-            weights_counter += 1
-            print("\n\n")
-    print("total weights:" , weights_counter)
-    print("weights crossed:", weights_crossed)
+if __name__ == "__ma_":
+    while True:
+        model = CNN()
+        model_offs = CNN()
+        select_start = (random.randint(0, 2),random.randint(0,2))
+        select_end   = (random.randint(select_start[0],3),random.randint(select_start[1],3))
+        print(model.layer1[0].weight[0][0])
+        gene = model.layer1[0].weight[0][0][:, select_start[0]:select_end[0]][select_start[1]:select_end[1]]
+        print(gene)
+        print(model_offs.layer1[0].weight[0])
+        with torch.no_grad():
+            model_offs.layer1[0].weight[0][0][:, select_start[0]:select_end[0]][select_start[1]:select_end[1]] = gene
+        print(model_offs.layer1[0].weight[0])
+        input("")
+        print("\n\n\n\n")
 if __name__ == "__main__":
-    weights_counter = 0
-    weights_crossed = 0
-    shape = (1,1,20,20)
-    model1 = CNN()
-    model2 = CNN()
-    for q in range(len(model1.layer1[0].bias)):
-        print(model1.layer2[0].bias[q])
+    model = CNN()
+    print(model.layer2[0].weight[0][0])
