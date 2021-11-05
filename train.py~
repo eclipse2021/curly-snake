@@ -23,7 +23,7 @@ timepassed       = 0
 taillen          = 1
 
 individual_alive = True
-group_size       = 512
+group_size       = 64
 population       = []
 mutation_possibility_0 = 0.05
 mutation_possibility = mutation_possibility_0
@@ -102,7 +102,7 @@ while True:
     fittest = parents[0]
     bestfit = fittest.fit
 
-    if bestfit > global_bestfit:
+    if bestfit < global_bestfit:
         global_bestfit = bestfit
         torch.save(fittest, MODEL_PATH + "model.pt")
 
