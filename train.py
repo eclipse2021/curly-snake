@@ -5,6 +5,7 @@ import obj
 import torch
 import net
 
+from copy import deepcopy
 #constants------------------------------
 sqrt_2           = 2 ** 0.5
 
@@ -22,11 +23,14 @@ timepassed       = 0
 taillen          = 1
 
 individual_alive = True
-group_size       = 128
+group_size       = 64
 population       = []
 mutation_possibility_0 = 0.05
 mutation_possibility = mutation_possibility_0
 desired_fit = 400
+global_bestfit = 0
+
+MODEL_PATH = "./models/"
 #--------------------------------------
 
 shape = (1,1,20,20)
@@ -97,10 +101,24 @@ while True:
     ###debug
     fittest = parents[0]
     bestfit = fittest.fit
-    if random.uniform(0,1) <= mutation_possibility:
-        parents[random.randint(1,len(parents) - 1)] = net.CNN()
-    
+
+    if bestfit < global_bestfit:
+        global_bestfit = bestfit
+        torch.save(fittest, MODEL_PATH + "model.pt")
+
+    if bestfit == 400:
+        #terminal condition
+        break
+
+    if generation >= 1000:
+        #terminal condition
+        break
+        
     mutations_occured = 0
+    if random.uniform(0,0.5) <= mutation_possibility:
+        parents[random.randint(1,len(parents) - 1)] = net.CNN()
+        mutations_occured += 1
+    
     offsprings = []
     random.shuffle(parents)
     while len(offsprings) < group_size - len(parents):
@@ -119,15 +137,15 @@ while True:
                     point_start = (random.randint(0,2), random.randint(0,2))
                     point_end = (random.randint(point_start[0],3), random.randint(point_start[1], 3))
                     with torch.no_grad():
-                        off1.layer1[0].weight[q][w] = model1.layer1[0].weight[q][w]
+                        off1.layer1[0].weight[q][w] = deepcopy(model1.layer1[0].weight[q][w])
                         off1.layer1[0].weight[q][w][:, point_start[0]:point_end[0]][point_start[1]:point_end[1]] = model2.layer1[0].weight[q][w][:, point_start[0]:point_end[0]][point_start[1]:point_end[1]]
-                        off2.layer1[0].weight[q][w] = model2.layer1[0].weight[q][w]
+                        off2.layer1[0].weight[q][w] = deepcopy(model2.layer1[0].weight[q][w])
                         off2.layer1[0].weight[q][w][:, point_start[0]:point_end[0]][point_start[1]:point_end[1]] = model1.layer1[0].weight[q][w][:, point_start[0]:point_end[0]][point_start[1]:point_end[1]]
         for q in range(len(model1.layer1[0].bias)):
             point = random.randint(0,len(model1.layer1[0].bias))
             with torch.no_grad():
-                off1.layer1[0].bias = model1.layer1[0].bias
-                off2.layer1[0].bias = model2.layer1[0].bias
+                off1.layer1[0].bias = deepcopy(model1.layer1[0].bias)
+                off2.layer1[0].bias = deepcopy(model2.layer1[0].bias)
                 off1.layer1[0].bias[:point] = model2.layer1[0].bias[:point]
                 off2.layer1[0].bias[:point] = model1.layer1[0].bias[:point]
         for q in range(len(model1.layer2[0].weight)):
@@ -136,29 +154,29 @@ while True:
                     point_start = (random.randint(0,2), random.randint(0,2))
                     point_end = (random.randint(point_start[0],3), random.randint(point_start[1], 3))
                     with torch.no_grad():
-                        off1.layer2[0].weight[q][w] = model1.layer2[0].weight[q][w]
+                        off1.layer2[0].weight[q][w] = deepcopy(model1.layer2[0].weight[q][w])
                         off1.layer2[0].weight[q][w][:, point_start[0]:point_end[0]][point_start[1]:point_end[1]] = model2.layer2[0].weight[q][w][:, point_start[0]:point_end[0]][point_start[1]:point_end[1]]
-                        off2.layer2[0].weight[q][w] = model2.layer2[0].weight[q][w]
+                        off2.layer2[0].weight[q][w] = deepcopy(model2.layer2[0].weight[q][w])
                         off2.layer2[0].weight[q][w][:, point_start[0]:point_end[0]][point_start[1]:point_end[1]] = model1.layer2[0].weight[q][w][:, point_start[0]:point_end[0]][point_start[1]:point_end[1]]
         for q in range(len(model1.layer2[0].bias)):
             point = random.randint(0,len(model1.layer2[0].bias))
             with torch.no_grad():
-                off1.layer2[0].bias = model1.layer2[0].bias
-                off2.layer2[0].bias = model2.layer2[0].bias
+                off1.layer2[0].bias = deepcopy(model1.layer2[0].bias)
+                off2.layer2[0].bias = deepcopy(model2.layer2[0].bias)
                 off1.layer2[0].bias[:point] = model2.layer2[0].bias[:point]
                 off2.layer2[0].bias[:point] = model1.layer2[0].bias[:point]
         for q in range(len(model1.fc.weight)):
             point = random.randint(0,len(model1.fc.weight[q]))
             with torch.no_grad():
-                off1.fc.weight[q] = model1.fc.weight[q]
-                off2.fc.weight[q] = model2.fc.weight[q]
+                off1.fc.weight[q] = deepcopy(model1.fc.weight[q])
+                off2.fc.weight[q] = deepcopy(model2.fc.weight[q])
                 off1.fc.weight[:point] = model2.fc.weight[:point]
                 off2.fc.weight[:point] = model1.fc.weight[:point]
         for q in range(len(model1.fc.bias)):
             point = random.randint(0,len(model1.fc.bias))
             with torch.no_grad():
-                off1.fc.bias = model1.fc.bias
-                off2.fc.bias = model2.fc.bias
+                off1.fc.bias = deepcopy(model1.fc.bias)
+                off2.fc.bias = deepcopy(model2.fc.bias)
                 off1.fc.bias[:point] = model2.fc.bias[:point]
                 off2.fc.bias[:point] = model1.fc.bias[:point]
         offsprings.append(off1)
