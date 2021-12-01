@@ -1,22 +1,11 @@
+from os import startfile, supports_dir_fd
 import torch
 import torch.nn as nn
-import random
+
 from torch.nn.modules import padding
+import torch.nn.functional as F
 
-# model architecture #
-# shape = (1, 1, 20, 20)
-# x = torch.zeros(shape)
-# conv1 = nn.Conv2d(1, 8, 3)
-# conv2 = nn.Conv2d(8, 8, kernel_size=3, padding=1)
-# pool = nn.MaxPool2d(2)
-
-# out = conv1(x)
-# out = pool(out)
-# out = conv2(out)
-# out = pool(out)
-# out = out.view(out.size(0), -1)
-# print(out.shape)
-
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 class CNN(torch.nn.Module):
     def __init__(self):
@@ -36,34 +25,48 @@ class CNN(torch.nn.Module):
             torch.nn.ReLU(),
             torch.nn.MaxPool2d(kernel_size=2, stride=2))
 
-        # 전결합층 4x4x8 inputs -> 4 outputs
-        self.fc = torch.nn.Linear(4 * 4 * 8, 4, bias=True)
+        # 전결합층 4x4x8 + 4 inputs -> 1 outputs
+        self.fc = torch.nn.Linear(4 * 4 * 8 + 4, 1, bias=True)
+        self.sigmoid = torch.nn.Sigmoid()
 
         # 전결합층 한정으로 가중치 초기화
         torch.nn.init.xavier_uniform_(self.fc.weight)
 
-    def forward(self, x):
+    def forward(self, x, action):
         out = self.layer1(x)
         out = self.layer2(out)
         out = out.view(out.size(0), -1)   # 전결합층을 위해서 Flatten
+        out = torch.cat([out[0], action])
+
         out = self.fc(out)
+        out = self.sigmoid(out)
         return out
 
-if __name__ == "__ma_":
-    while True:
-        model = CNN()
-        model_offs = CNN()
-        select_start = (random.randint(0, 2),random.randint(0,2))
-        select_end   = (random.randint(select_start[0],3),random.randint(select_start[1],3))
-        print(model.layer1[0].weight[0][0])
-        gene = model.layer1[0].weight[0][0][:, select_start[0]:select_end[0]][select_start[1]:select_end[1]]
-        print(gene)
-        print(model_offs.layer1[0].weight[0])
-        with torch.no_grad():
-            model_offs.layer1[0].weight[0][0][:, select_start[0]:select_end[0]][select_start[1]:select_end[1]] = gene
-        print(model_offs.layer1[0].weight[0])
-        input("")
-        print("\n\n\n\n")
-if __name__ == "__main__":
-    model = CNN()
-    print(model.layer2[0].weight[0][0])
+class DQN(nn.Module):
+
+    def __init__(self, h, w, outputs):
+        super(DQN, self).__init__()
+        self.conv1 = nn.Conv2d(1, 16, kernel_size=5, stride=2)
+        self.bn1 = nn.BatchNorm2d(16)
+        self.conv2 = nn.Conv2d(16, 32, kernel_size=5, stride=2)
+        self.bn2 = nn.BatchNorm2d(32)
+        self.conv3 = nn.Conv2d(32, 32, kernel_size=5, stride=2)
+        self.bn3 = nn.BatchNorm2d(32)
+
+        # Linear 입력의 연결 숫자는 conv2d 계층의 출력과 입력 이미지의 크기에
+        # 따라 결정되기 때문에 따로 계산을 해야합니다.
+        def conv2d_size_out(size, kernel_size = 5, stride = 2):
+            return (size - (kernel_size - 1) - 1) // stride  + 1
+        convw = conv2d_size_out(conv2d_size_out(conv2d_size_out(w)))
+        convh = conv2d_size_out(conv2d_size_out(conv2d_size_out(h)))
+        linear_input_size = convw * convh * 32
+        self.head = nn.Linear(linear_input_size, outputs)
+
+    # 최적화 중에 다음 행동을 결정하기 위해서 하나의 요소 또는 배치를 이용해 호촐됩니다.
+    # ([[left0exp,right0exp]...]) 를 반환합니다.
+    def forward(self, x):
+        x = x.to(device)
+        x = F.relu(self.bn1(self.conv1(x)))
+        x = F.relu(self.bn2(self.conv2(x)))
+        x = F.relu(self.bn3(self.conv3(x)))
+        return self.head(x.view(x.size(0), -1))
