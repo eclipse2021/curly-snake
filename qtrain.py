@@ -16,7 +16,7 @@ class ReplayMemory(object):
         self.memory = deque([],maxlen=capacity)
 
     def push(self, *args):
-        """transition 저장"""
+        #"""transition 저장"""
         self.memory.append(Transition(*args))
 
     def sample(self, batch_size):
@@ -33,7 +33,7 @@ height             = 720    #세로20칸
 shape = (1, 1, 20, 20)      #screen size
 
 chwdth             = 36
-chhght             = 36
+chhght             = chwdth
 posx               = (width/2) - chwdth
 posy               = height/2 - chhght
 
@@ -42,36 +42,97 @@ direction          = random.randrange(0,3)
 timepassed         = 0
 taillen            = 1
 #--------------------------------------
+def get_screen_0():
+    global posx, posy, timepassed, x_data, taillen, trail
+    trail.append([posx, posy])
+    if len(trail) > taillen:
+        del trail[0]
+    
+    x_data = torch.zeros(shape).to(device)
+    for t in trail:
+        x_data[0][0][int(t[1]/chhght)][int(t[0]/chhght)] = 100
+    x_data[0][0][int(posy/chhght)][int(posx/chwdth)] = 220
 
+    print_screen()
+    return x_data
 def get_screen():
-    global posx, posy, timepassed, x_data
-    if direction == 0: # 플레이어 위치 업데이트
-        posy -= chhght #
-    if direction == 1: #
-        posy += chhght #
-    if direction == 2: #
-        posx -= chhght #
-    if direction == 3: #
-        posx += chhght #
-
+    global posx, posy, timepassed, x_data, taillen, trail
     #꼬리 좌표 업데이트
     trail.append([posx, posy])                                     # 길이가 하나 늘어남(머리 위치에서)
     last_tail = (int(trail[0][1]/chhght), int(trail[0][0]/chwdth)) #없어질 꼬리 좌표
     if len(trail) - 1 > taillen:
+        print("[trail0]", end = '\0')
+        print(str(trail[0][0]/chhght) + ' , ' + str(trail[0][1]/chhght))
         del trail[0]                                               # 길이가 하나 줄어듬(맨 마지막 꼬리에서) -> 전체 길이는 일정함
-
+    
+    print("[debug]")
+    for t in trail:
+        print(str(t[0]/chhght) + ',' + str(t[1]/chhght))
     tails_found = 0
     while tails_found < taillen: # 입력 텐서 업데이트
+        print("[trailsfound]", end = '\0')
+        print(str(trail[tails_found][1]/chhght) + ' , ' + str(trail[tails_found][0]/chhght))
         x_data[0][0][int(trail[tails_found][1]/chhght)][int(trail[tails_found][0]/chwdth)] = 100
         tails_found += 1
-    if len(trail) > taillen:
-        x_data[0][0][last_tail[0]][last_tail[1]] = 0
-    x_data[0][0][int(posx/chhght)][int(posy/chwdth)] = 220 # 강한 머리/업데이트 끝
+    if len(trail) - 1 > taillen:
+        print("[0edTensor]", end = '\0')
+        print(str(last_tail[1]) + ' , ' + str(last_tail[0]))
+    x_data[0][0][last_tail[0]][last_tail[1]] = 0
+    x_data[0][0][int(posy/chhght)][int(posx/chwdth)] = 220 # 강한 머리/업데이트 끝
 
+    print_screen()
     return x_data
 
+def update(_input):
+    global posx, posy, timepassed, x_data
+    y = torch.tensor([1.]).to(device)
+    if _input == 0:
+        posy -= chhght 
+    elif _input == 1: 
+        posy += chhght
+    elif _input == 2:
+        posx -= chhght
+    elif _input == 3:
+        posx += chhght
+
+    print("[update]x:" + str(posx/chhght) + "  y:" + str(posy/chwdth))
+
+    if posx < 0:                              # 사망판정 시작
+        y = torch.tensor([0.]).to(device)
+    elif posx > width - chwdth:
+        y = torch.tensor([0.]).to(device)
+    elif posy < 0:
+        y = torch.tensor([0.]).to(device)
+    elif posy > height - chhght:
+        y = torch.tensor([0.]).to(device)
+    
+    if len(trail) > 1:
+        if [posx, posy] in trail[:len(trail) - 1]:
+            y = torch.tensor([0.]).to(device) # 사망판정 끝
+    return y
+
+
+
+def print_screen():
+    global x_data
+    game_screen = x_data.tolist()
+    for u in game_screen[0][0]:
+        for v in u:
+            if v == 0:
+                print('0 ', end = '\0')
+            if v == 100:
+                print('1 ', end = '\0')
+            if v == 220:
+                print('H ', end = '\0')
+        print()
+
 def restart_game():
-    pass
+    print("[restart_game()]")
+    x_data = torch.zeros(shape).to(device)
+    trail               = []
+    taillen             = 1
+    posx                = (width/2) - chwdth
+    posy                = height/2 - chhght
 
 BATCH_SIZE = 128
 GAMMA = 0.999
@@ -114,38 +175,35 @@ memory = ReplayMemory(10000)
 
 steps_done = 0
 
-def select_action(state):
+def select_action():
     global steps_done
     sample = random.random()
 
     eps_threshold = EPS_END + (EPS_START - EPS_END) * \
         math.exp(-1. * steps_done / EPS_DECAY)
     steps_done += 1
+    print("[select_action()][eps_threshold]", eps_threshold)
     if sample > eps_threshold:
+        print("[select_action()][sample]greater")
         last_prediction = torch.tensor([0.]).to(device)
         action = torch.tensor([0 for k in range(4)]).to(device)
         index = 0
+        current_screen = get_screen_0()
         for x in range(4):
             action[x] = 1
             action[x - 1] = 0
-            prediction = agent(get_screen(), action)
-            if prediction < last_prediction:
+            prediction = agent(current_screen, action)
+            if prediction > last_prediction:
                 index = x
                 last_prediction = prediction
         return (last_prediction, index)
 
-
-        with torch.no_grad():
-            # t.max (1)은 각 행의 가장 큰 열 값을 반환합니다.
-            # 최대 결과의 두번째 열은 최대 요소의 주소값이므로,
-            # 기대 보상이 더 큰 행동을 선택할 수 있습니다.
-            return policy_net(state).max(1)[1].view(1, 1)
     else:
+        print("[select_action()][sample]less")
         index = random.randrange(n_actions)
         action = torch.tensor([0 for k in range(4)]).to(device)
         action[index] = 1
-        return (agent(get_screen(), action), index)
-        return torch.tensor([[random.randrange(n_actions)]], device=device, dtype=torch.long)
+        return (agent(get_screen_0(), action), index)
 
 def optimize_model():
     if len(memory) < BATCH_SIZE:
@@ -189,6 +247,23 @@ def optimize_model():
     for param in policy_net.parameters():
         param.grad.data.clamp_(-1, 1)
     optimizer.step()
+
+for ep in range(num_episodes):
+    while True:
+        direction = select_action()
+        y = update(direction[1])
+
+        if y == 0:
+            restart_game()
+            break
+        else:
+            print(y)
+        print(direction)
+        input("debug stop\n")
+        timepassed += 1
+        if timepassed % 10 == 0:
+            taillen += 1
+
 
 for ep in range(num_episodes):
     timepassed = 0
