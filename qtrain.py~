@@ -127,13 +127,14 @@ def print_screen():
         print()
 
 def restart_game():
+    global x_data, trail, taillen, posx, posy
     print("[restart_game()]")
     x_data = torch.zeros(shape).to(device)
     trail               = []
     taillen             = 1
     posx                = (width/2) - chwdth
     posy                = height/2 - chhght
-
+# hyperparameters
 BATCH_SIZE = 128
 GAMMA = 0.999
 EPS_START = 0.9
