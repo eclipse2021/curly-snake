@@ -170,6 +170,8 @@ def optimize_model():
     action = torch.tensor([0 for k in range(4)]).to(device)
     for data in batch:
         optimizer.zero_grad()
+        print(data[1])
+        input()
         action[data[1]] = 1
         prediction = target_network(data[0], action)
         loss = criterion(prediction, data[2])
